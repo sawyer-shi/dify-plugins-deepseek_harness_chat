@@ -1,0 +1,54 @@
+identity:
+  author: sawyer-shi
+  name: deepseek_harness
+  label:
+    en_US: DeepSeek Harness
+    zh_Hans: DeepSeek Harness
+  description:
+    en_US: >
+      Chat with a local DeepSeek Harness (DSH) agent through the dsh-openai-gateway
+      OpenAI-compatible API, with session-level and user-level sticky agent sessions.
+    zh_Hans: >
+      通过 dsh-openai-gateway 的 OpenAI 兼容 API 与本地 DeepSeek Harness (DSH) Agent
+      对话，支持会话级与用户级粘性会话。
+  icon: icon.svg
+  tags:
+    - productivity
+    - utilities
+credentials_for_provider:
+  api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: API Key
+      zh_Hans: API 密钥
+    placeholder:
+      en_US: sk-dsh-...
+      zh_Hans: sk-dsh-...
+    help:
+      en_US: >
+        Bearer key of dsh-openai-gateway, found in $DSH_HOME/openai-gateway/api-keys.json.
+      zh_Hans: >
+        dsh-openai-gateway 的 Bearer 密钥，见 $DSH_HOME/openai-gateway/api-keys.json。
+  base_url:
+    type: text-input
+    required: true
+    default: http://127.0.0.1:41540
+    label:
+      en_US: Gateway Base URL
+      zh_Hans: 网关地址
+    placeholder:
+      en_US: http://127.0.0.1:41540
+      zh_Hans: http://127.0.0.1:41540
+    help:
+      en_US: >
+        dsh-openai-gateway address. If Dify runs in Docker, use
+        http://host.docker.internal:41540 instead of 127.0.0.1.
+      zh_Hans: >
+        dsh-openai-gateway 地址。Dify 以 Docker 部署时请改用
+        http://host.docker.internal:41540，而非 127.0.0.1。
+tools:
+  - tools/chat.yaml
+extra:
+  python:
+    source: provider/deepseek_harness.py

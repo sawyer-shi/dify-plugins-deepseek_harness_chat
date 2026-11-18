@@ -1,0 +1,94 @@
+identity:
+  name: chat
+  author: sawyer-shi
+  label:
+    en_US: DeepSeek Harness Chat
+    zh_Hans: DeepSeek Harness 对话
+description:
+  human:
+    en_US: >
+      Chat with a local DeepSeek Harness (DSH) agent through the dsh-openai-gateway
+      OpenAI-compatible API. Each call runs in a real agent session with tools and a
+      workspace. Supports session-level and user-level sticky sessions.
+    zh_Hans: >
+      通过 dsh-openai-gateway 的 OpenAI 兼容 API 与本地 DeepSeek Harness (DSH) Agent
+      对话。每次调用都在带工具与工作区的真实 Agent 会话中执行。支持会话级与用户级粘性会话。
+  llm: >
+    Tool for chatting with a local DeepSeek Harness coding agent. Send a user message
+    (prompt); the agent replies after running its own tools in its local workspace.
+extra:
+  python:
+    source: tools/chat.py
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: Prompt
+      zh_Hans: 用户消息
+    human_description:
+      en_US: The user message sent to the DSH agent for this turn.
+      zh_Hans: 本轮发送给 DSH Agent 的用户消息；粘性会话下只需填写新消息。
+    llm_description: The user message to send to the DeepSeek Harness agent for this turn.
+    form: llm
+  - name: model
+    type: string
+    required: false
+    default: default
+    label:
+      en_US: Model
+      zh_Hans: 模型
+    human_description:
+      en_US: 'Model name: "default", "provider/model", or a bare model name.'
+      zh_Hans: '模型名："default"（跟随 DSH 默认模型）、"provider/model" 精确路由，或裸模型名。'
+    form: form
+  - name: session_scope
+    type: select
+    required: false
+    default: session
+    label:
+      en_US: Session Scope
+      zh_Hans: 会话级别
+    human_description:
+      en_US: >
+        session: one agent per Dify conversation; user: one agent per Dify user across
+        conversations; none: stateless single turn.
+      zh_Hans: >
+        会话级：同一 Dify 会话复用同一 Agent；用户级：同一 Dify 用户跨会话复用同一
+        Agent；无状态：每次调用独立。
+    form: form
+    options:
+      - value: session
+        label:
+          en_US: Session
+          zh_Hans: 会话级
+      - value: user
+        label:
+          en_US: User
+          zh_Hans: 用户级
+      - value: none
+        label:
+          en_US: Stateless
+          zh_Hans: 无状态
+  - name: timeout_seconds
+    type: number
+    required: false
+    default: 300
+    label:
+      en_US: Timeout (seconds)
+      zh_Hans: 超时（秒）
+    human_description:
+      en_US: Per-turn timeout in seconds. Agent turns can take minutes.
+      zh_Hans: 单轮超时（秒）。Agent 单轮执行可能耗时数分钟。
+    form: form
+  - name: include_reasoning
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Include Reasoning
+      zh_Hans: 附带思考内容
+    human_description:
+      en_US: If enabled, prepend the agent's thinking as a <think> block.
+      zh_Hans: 开启后在回复正文前以 &lt;think&gt; 段附带思考内容。
+    form: form

@@ -1,0 +1,17 @@
+[project]
+name = "deepseek-harness-chat-pLg7Wq2x"
+version = "0.1.0"
+description = "Dify tool plugin: chat with a local DeepSeek Harness agent via dsh-openai-gateway"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dify_plugin>=0.9.0,<0.11.0",
+    "httpx>=0.28.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "respx>=0.22.0",
+    "pyyaml>=6.0",
+]
