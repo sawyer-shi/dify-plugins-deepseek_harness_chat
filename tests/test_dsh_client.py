@@ -260,3 +260,13 @@ class TestDshGatewayClient:
         with pytest.raises(DshGatewayError) as ei:
             self._client().list_models()
         assert ei.value.status_code == 401
+
+    @respx.mock
+    def test_list_models_non_json_body_raises_friendly_error(self):
+        respx.get(f"{BASE}/v1/models").mock(
+            return_value=httpx.Response(200, text="<html>not the gateway</html>")
+        )
+        with pytest.raises(DshGatewayError) as ei:
+            self._client().list_models()
+        assert "non-JSON" in ei.value.message
+        assert ei.value.status_code == 200

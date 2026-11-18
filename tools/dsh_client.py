@@ -195,7 +195,15 @@ class DshGatewayClient:
                         status_code=response.status_code,
                         detail=response.text,
                     )
-                data = response.json()
+                try:
+                    data = response.json()
+                except ValueError as e:
+                    raise DshGatewayError(
+                        "Gateway returned a non-JSON response from /v1/models; "
+                        "check that base_url points at dsh-openai-gateway.",
+                        status_code=response.status_code,
+                        detail=response.text[:200],
+                    ) from e
                 if isinstance(data, dict):
                     models = data.get("data")
                     if isinstance(models, list):
