@@ -39,11 +39,16 @@ deepseek_harness_chat/                # 仓库根目录 = 插件目录
 ├── manifest.yaml                     # 见 §4
 ├── main.py                           # Plugin(DifyPluginEnv()) 入口
 ├── pyproject.toml                    # uv；dify_plugin + httpx
+├── uv.lock                           # uv 生成并提交（官方惯例）
+├── conftest.py                       # 空；使 pytest 将根目录加入 sys.path
 ├── .python-version                   # 3.12
-├── .difyignore
-├── .gitignore
+├── .difyignore / .gitignore
 ├── README.md                         # 使用说明（含 Docker 网络注意事项）
-├── icon.svg                          # 插件图标（DSH/DeepSeek 风格）
+├── PRIVACY.md                        # 隐私声明（marketplace 要求）
+├── _assets/
+│   ├── icon.svg                      # 插件图标
+│   └── icon-dark.svg                 # 暗色主题图标
+├── .github/workflows/plugin-publish.yml   # release → 打包 → 提 PR 到 marketplace
 ├── provider/
 │   ├── __init__.py
 │   ├── deepseek_harness.py           # ToolProvider + _validate_credentials
@@ -56,10 +61,9 @@ deepseek_harness_chat/                # 仓库根目录 = 插件目录
 │   └── session_manager.py            # scope 键 → dsh_session_id 映射（纯逻辑，可单测）
 └── tests/
     ├── __init__.py
-    ├── test_sse_parsing.py
+    ├── test_dsh_client.py            # 纯函数 + HTTP 客户端（respx mock）
     ├── test_session_manager.py
-    ├── test_error_mapping.py
-    ├── test_request_building.py
+    ├── test_chat_tool.py
     └── test_provider_credentials.py
 ```
 
@@ -99,6 +103,12 @@ meta:
     language: python
     version: "3.12"
     entrypoint: main
+tags:
+  - productivity
+  - utilities
+privacy: PRIVACY.md
+repo: https://github.com/sawyer-shi/dify-plugins-deepseek_harness_chat
+verified: false
 ```
 
 pyproject.toml 依赖：`dify_plugin>=0.9.0,<0.11.0`、`httpx>=0.28.1`；dev 组：`pytest`、`respx`（httpx mock）。
@@ -170,7 +180,7 @@ pyproject.toml 依赖：`dify_plugin>=0.9.0,<0.11.0`、`httpx>=0.28.1`；dev 组
 
 **base_url 规范化**：去除尾部 `/`；若以 `/v1` 结尾则去除（用户误填兼容）。客户端拼接 `{base_url}/v1/chat/completions` 与 `{base_url}/v1/models`。
 
-**错误映射**（统一抛 `dify_plugin.errors.tool.ToolInvokeError`，消息含原因与处置建议）：
+**错误映射**（运行时错误直接 `raise Exception`（官方工具插件惯例，daemon 会包装展示）；凭据校验失败抛 `dify_plugin.errors.tool.ToolProviderCredentialValidationError`。消息含原因与处置建议）：
 
 | 网关响应 | 工具报错消息（要点） |
 |---|---|
