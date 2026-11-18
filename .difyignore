@@ -9,3 +9,6 @@ __pycache__/
 .github/
 tests/
 docs/
+.git/
+.gitignore
+conftest.py
