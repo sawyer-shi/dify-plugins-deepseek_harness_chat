@@ -157,3 +157,106 @@ class TestDshGatewayError:
         assert e.status_code == 404
         assert "session_not_found" in e.detail
         assert str(e) == "msg"
+
+
+import httpx
+import respx
+
+from tools.dsh_client import DshGatewayClient
+
+BASE = "http://127.0.0.1:41540"
+
+
+def _sse(*events: str) -> str:
+    return "".join(f"data: {e}\n\n" for e in events)
+
+
+class TestDshGatewayClient:
+    def _client(self, timeout: float = 30.0) -> DshGatewayClient:
+        return DshGatewayClient(base_url=BASE, api_key="sk-dsh-test", timeout_seconds=timeout)
+
+    @respx.mock
+    def test_chat_streams_and_accumulates(self):
+        route = respx.post(f"{BASE}/v1/chat/completions").mock(
+            return_value=httpx.Response(
+                200,
+                headers={"X-DSH-Session": "openai-hdr"},
+                text=_sse(
+                    '{"dsh_session_id": "openai-1", "model": "m1", "choices": [{"delta": {"content": "Hi"}}]}',
+                    '{"choices": [{"delta": {"content": " there"}}]}',
+                    "[DONE]",
+                ),
+            )
+        )
+        result = self._client().chat("hello", model="default", session_header="new")
+        assert result.content == "Hi there"
+        assert result.session_id == "openai-1"
+        request = route.calls.last.request
+        assert request.headers["Authorization"] == "Bearer sk-dsh-test"
+        assert request.headers["X-DSH-Session"] == "new"
+        import json as _json
+
+        body = _json.loads(request.content)
+        assert body["model"] == "default"
+        assert body["messages"] == [{"role": "user", "content": "hello"}]
+        assert body["stream"] is True
+
+    @respx.mock
+    def test_chat_session_id_falls_back_to_response_header(self):
+        respx.post(f"{BASE}/v1/chat/completions").mock(
+            return_value=httpx.Response(
+                200,
+                headers={"X-DSH-Session": "openai-from-header"},
+                text=_sse('{"choices": [{"delta": {"content": "ok"}}]}', "[DONE]"),
+            )
+        )
+        result = self._client().chat("hello")
+        assert result.session_id == "openai-from-header"
+
+    @respx.mock
+    def test_chat_error_status_raises_with_detail(self):
+        respx.post(f"{BASE}/v1/chat/completions").mock(
+            return_value=httpx.Response(404, text='{"error": "model_not_found"}')
+        )
+        with pytest.raises(DshGatewayError) as ei:
+            self._client().chat("hello", model="bad")
+        assert ei.value.status_code == 404
+        assert "model" in ei.value.message.lower()
+
+    @respx.mock
+    def test_chat_connect_error_raises_connection_message(self):
+        respx.post(f"{BASE}/v1/chat/completions").mock(
+            side_effect=httpx.ConnectError("refused")
+        )
+        with pytest.raises(DshGatewayError) as ei:
+            self._client().chat("hello")
+        assert ei.value.status_code is None
+        assert "host.docker.internal" in ei.value.message
+
+    @respx.mock
+    def test_chat_timeout_raises_timeout_message(self):
+        respx.post(f"{BASE}/v1/chat/completions").mock(
+            side_effect=httpx.ReadTimeout("t")
+        )
+        with pytest.raises(DshGatewayError) as ei:
+            self._client().chat("hello")
+        assert "504" in ei.value.message or "timed out" in ei.value.message.lower()
+
+    @respx.mock
+    def test_list_models_ok(self):
+        respx.get(f"{BASE}/v1/models").mock(
+            return_value=httpx.Response(
+                200, json={"object": "list", "data": [{"id": "p/m"}]}
+            )
+        )
+        models = self._client().list_models()
+        assert models == [{"id": "p/m"}]
+
+    @respx.mock
+    def test_list_models_unauthorized(self):
+        respx.get(f"{BASE}/v1/models").mock(
+            return_value=httpx.Response(401, text="invalid_api_key")
+        )
+        with pytest.raises(DshGatewayError) as ei:
+            self._client().list_models()
+        assert ei.value.status_code == 401

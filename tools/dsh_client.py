@@ -4,6 +4,8 @@ import json
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 
+import httpx
+
 DEFAULT_MAX_TOKENS = 8192
 TOOL_CALL_COMMENT_PREFIX = "dsh tool-call "
 
@@ -132,3 +134,78 @@ def friendly_error_message(status_code: int | None, detail: str = "") -> str:
             "(use http://host.docker.internal:41540 if Dify runs in Docker)."
         )
     return f"Gateway error ({status_code}): {base}"
+
+
+class DshGatewayClient:
+    def __init__(
+        self, base_url: str, api_key: str, timeout_seconds: float = 300.0
+    ) -> None:
+        self._base = normalize_base_url(base_url)
+        self._api_key = api_key
+        self._timeout = timeout_seconds
+
+    def chat(
+        self, prompt: str, model: str = "default", session_header: str = "new"
+    ) -> ChatResult:
+        url = f"{self._base}/v1/chat/completions"
+        try:
+            with httpx.Client(
+                timeout=httpx.Timeout(self._timeout, connect=10.0)
+            ) as client:
+                with client.stream(
+                    "POST",
+                    url,
+                    headers=build_headers(
+                        self._api_key,
+                        session_header,
+                        accept="text/event-stream",
+                    ),
+                    json=build_body(model, prompt),
+                ) as response:
+                    if response.status_code != 200:
+                        body = response.read().decode("utf-8", errors="replace")
+                        raise DshGatewayError(
+                            friendly_error_message(response.status_code, body),
+                            status_code=response.status_code,
+                            detail=body,
+                        )
+                    result = parse_sse_lines(response.iter_lines())
+                    header_session = response.headers.get("X-DSH-Session")
+                    if not result.session_id and header_session:
+                        result.session_id = header_session
+                    return result
+        except httpx.TimeoutException as e:
+            raise DshGatewayError(
+                "Agent turn timed out. Increase timeout_seconds or simplify "
+                "the task."
+            ) from e
+        except httpx.ConnectError as e:
+            raise DshGatewayError(friendly_error_message(None)) from e
+        except httpx.HTTPError as e:
+            raise DshGatewayError(f"Gateway request failed: {e}") from e
+
+    def list_models(self) -> list[dict]:
+        url = f"{self._base}/v1/models"
+        try:
+            with httpx.Client(timeout=httpx.Timeout(self._timeout, connect=10.0)) as client:
+                response = client.get(url, headers=build_headers(self._api_key, None))
+                if response.status_code != 200:
+                    raise DshGatewayError(
+                        friendly_error_message(response.status_code, response.text),
+                        status_code=response.status_code,
+                        detail=response.text,
+                    )
+                data = response.json()
+                if isinstance(data, dict):
+                    models = data.get("data")
+                    if isinstance(models, list):
+                        return [m for m in models if isinstance(m, dict)]
+                return []
+        except httpx.TimeoutException as e:
+            raise DshGatewayError(
+                "Timed out while listing models from the gateway."
+            ) from e
+        except httpx.ConnectError as e:
+            raise DshGatewayError(friendly_error_message(None)) from e
+        except httpx.HTTPError as e:
+            raise DshGatewayError(f"Gateway request failed: {e}") from e
