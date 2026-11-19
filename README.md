@@ -4,6 +4,21 @@ A Dify tool plugin that chats with a local [DeepSeek Harness (DSH)](https://gith
 
 > 简体中文文档：[readme/README_zh_Hans.md](readme/README_zh_Hans.md)
 
+## Version Information
+
+- **Current Version**: v0.0.1
+- **Release Date**: 2026-11-19
+- **Compatibility**: Dify Plugin Framework
+- **Python Version**: 3.12
+
+### Version History
+- **v0.0.1** (2026-11-19): Initial release
+  - Chat with a local DeepSeek Harness agent via dsh-openai-gateway; every call runs in a real agent session with tools and a workspace
+  - Sticky sessions: session-level, user-level, and stateless modes with automatic session management
+  - **File input**: attach files with the message; they are uploaded to the agent workspace before the turn
+  - **File output**: files generated during the turn (Excel / CSV / PDF / docx / images / zip…) returned as conversation attachments, with extension filtering and per-turn file limits
+  - **Truncation controls**: `max_text_chars` for the Dify-side reply and `max_tokens` for the DSH agent turn
+
 ## Features
 
 - **Real agent, not a chat completion** — each turn is executed by a DSH agent with tools, shell access and a workspace

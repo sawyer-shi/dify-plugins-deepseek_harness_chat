@@ -7,6 +7,21 @@ Agent 对话。每次调用都在**带工具与工作区的真实 Agent 会话**
 
 > English documentation: [README.md](../README.md)
 
+## 版本信息
+
+- **当前版本**: v0.0.1
+- **发布日期**: 2026-11-19
+- **兼容性**: Dify 插件框架
+- **Python 版本**: 3.12
+
+### 版本历史
+- **v0.0.1** (2026-11-19): 首个发布版本
+  - 通过 dsh-openai-gateway 与本地 DeepSeek Harness Agent 对话，每次调用都在带工具与工作区的真实 Agent 会话中执行
+  - 粘性会话：会话级、用户级、无状态三种模式，会话自动管理
+  - **文件输入**：随消息上传文件，先进入 Agent 工作区再执行任务
+  - **文件输出**：本轮生成的文件（Excel / CSV / PDF / docx / 图片 / zip…）直接作为附件返回对话，支持扩展名过滤与每轮文件数上限
+  - **截断控制**：Dify 侧回复文本（`max_text_chars`）与 DSH 单轮输出（`max_tokens`）独立设限
+
 ## 功能特性
 
 - **真实 Agent，而非普通补全**：每轮由带工具、Shell 与工作区的 DSH Agent 执行

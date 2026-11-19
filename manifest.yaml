@@ -1,4 +1,4 @@
-version: 0.0.6
+version: 0.0.1
 type: plugin
 author: sawyer-shi
 name: deepseek_harness_chat
@@ -27,7 +27,7 @@ plugins:
   tools:
     - provider/deepseek_harness.yaml
 meta:
-  version: 0.0.6
+  version: 0.0.1
   arch:
     - amd64
     - arm64
