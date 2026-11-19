@@ -2,16 +2,22 @@ version: 0.0.1
 type: plugin
 author: sawyer-shi
 name: deepseek_harness_chat
+contact: sawyer36@foxmail.com
 label:
   en_US: DeepSeek Harness Chat
-  zh_Hans: DeepSeek Harness 对话
+  zh_Hans: DeepSeek Harness 交互
 description:
   en_US: >
     Chat with a local DeepSeek Harness (DSH) agent through the dsh-openai-gateway
-    OpenAI-compatible API. Supports session-level and user-level sticky agent sessions.
+    OpenAI-compatible API. Each call runs in a real agent session with tools and a
+    workspace: attached files are uploaded into the workspace, and files generated
+    during the turn (Excel, CSV, PDF, ...) are returned as downloadable attachments.
+    Supports session-level and user-level sticky agent sessions.
   zh_Hans: >
     通过 dsh-openai-gateway 的 OpenAI 兼容 API 与本地 DeepSeek Harness (DSH) Agent
-    对话。支持会话级与用户级粘性会话。
+    对话。每次调用都在带工具与工作区的真实 Agent 会话中执行：随消息上传的文件会先进入
+    Agent 工作区，本轮生成的文件（Excel、CSV、PDF 等）直接作为附件返回对话。
+    支持会话级与用户级粘性会话。
 icon: icon.svg
 icon_dark: icon-dark.svg
 created_at: "2026-11-18T00:00:00Z"
@@ -28,6 +34,7 @@ plugins:
     - provider/deepseek_harness.yaml
 meta:
   version: 0.0.1
+  author: sawyer-shi
   arch:
     - amd64
     - arm64
@@ -35,6 +42,7 @@ meta:
     language: python
     version: "3.12"
     entrypoint: main
+  minimum_dify_version: 1.0.0
 privacy: PRIVACY.md
 repo: https://github.com/sawyer-shi/dify-plugins-deepseek_harness_chat
 verified: false
