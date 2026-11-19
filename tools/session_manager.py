@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import threading
 
-from tools.dsh_client import ChatResult, DshGatewayClient, DshGatewayError
+from tools.dsh_client import (
+    DEFAULT_MAX_TOKENS,
+    ChatResult,
+    DshGatewayClient,
+    DshGatewayError,
+)
 
 SESSION_HEADER_NEW = "new"
 _VALID_SCOPES = {"session", "user", "none"}
@@ -65,6 +70,7 @@ def chat_with_session_retry(
     key: str | None,
     prompt: str,
     model: str,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
 ) -> tuple[ChatResult, bool]:
     """Call client.chat with sticky-session handling.
 
@@ -75,11 +81,11 @@ def chat_with_session_retry(
     session_id = manager.get(key)
     session_header = session_id or SESSION_HEADER_NEW
     try:
-        result = client.chat(prompt, model=model, session_header=session_header)
+        result = client.chat(prompt, model=model, session_header=session_header, max_tokens=max_tokens)
     except DshGatewayError as e:
         if session_id and _is_session_not_found(e):
             manager.drop(key)
-            result = client.chat(prompt, model=model, session_header=SESSION_HEADER_NEW)
+            result = client.chat(prompt, model=model, session_header=SESSION_HEADER_NEW, max_tokens=max_tokens)
             manager.set(key, result.session_id)
             return result, True
         raise

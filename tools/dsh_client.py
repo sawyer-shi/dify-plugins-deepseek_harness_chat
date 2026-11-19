@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 import httpx
 
-DEFAULT_MAX_TOKENS = 8192
+DEFAULT_MAX_TOKENS = 32768
 TOOL_CALL_COMMENT_PREFIX = "dsh tool-call "
 
 
@@ -145,7 +145,7 @@ class DshGatewayClient:
         self._timeout = timeout_seconds
 
     def chat(
-        self, prompt: str, model: str = "default", session_header: str = "new"
+        self, prompt: str, model: str = "default", session_header: str = "new", max_tokens: int = DEFAULT_MAX_TOKENS
     ) -> ChatResult:
         url = f"{self._base}/v1/chat/completions"
         try:
@@ -160,7 +160,7 @@ class DshGatewayClient:
                         session_header,
                         accept="text/event-stream",
                     ),
-                    json=build_body(model, prompt),
+                    json=build_body(model, prompt, max_tokens=max_tokens),
                 ) as response:
                     if response.status_code != 200:
                         body = response.read().decode("utf-8", errors="replace")
@@ -213,6 +213,85 @@ class DshGatewayClient:
             raise DshGatewayError(
                 "Timed out while listing models from the gateway."
             ) from e
+        except httpx.ConnectError as e:
+            raise DshGatewayError(friendly_error_message(None)) from e
+        except httpx.HTTPError as e:
+            raise DshGatewayError(f"Gateway request failed: {e}") from e
+
+    def list_files(self, since: float = 0.0) -> list[dict]:
+        """List workspace files modified at/after unix timestamp `since` (seconds)."""
+        url = f"{self._base}/v1/dsh/files?since={since:.0f}"
+        try:
+            with httpx.Client(timeout=httpx.Timeout(self._timeout, connect=10.0)) as client:
+                response = client.get(url, headers=build_headers(self._api_key, None))
+                if response.status_code != 200:
+                    raise DshGatewayError(
+                        f"Gateway error ({response.status_code}): {response.text[:200]}",
+                        status_code=response.status_code,
+                        detail=response.text,
+                    )
+                data = response.json()
+                entries = data.get("data") if isinstance(data, dict) else None
+                if isinstance(entries, list):
+                    return [e for e in entries if isinstance(e, dict)]
+                return []
+        except httpx.TimeoutException as e:
+            raise DshGatewayError("Timed out while listing workspace files.") from e
+        except httpx.ConnectError as e:
+            raise DshGatewayError(friendly_error_message(None)) from e
+        except httpx.HTTPError as e:
+            raise DshGatewayError(f"Gateway request failed: {e}") from e
+
+    def download_file(self, path: str) -> tuple[bytes, str]:
+        """Download one workspace file. Returns (blob, mime_type)."""
+        from urllib.parse import quote
+
+        url = f"{self._base}/v1/dsh/files/download?path={quote(path, safe='')}"
+        try:
+            with httpx.Client(timeout=httpx.Timeout(self._timeout, connect=10.0)) as client:
+                response = client.get(url, headers=build_headers(self._api_key, None))
+                if response.status_code != 200:
+                    raise DshGatewayError(
+                        f"Gateway error ({response.status_code}): {response.text[:200]}",
+                        status_code=response.status_code,
+                        detail=response.text,
+                    )
+                content_type = (
+                    response.headers.get("content-type", "application/octet-stream")
+                    .split(";")[0]
+                    .strip()
+                    or "application/octet-stream"
+                )
+                return response.content, content_type
+        except httpx.TimeoutException as e:
+            raise DshGatewayError("Timed out while downloading a workspace file.") from e
+        except httpx.ConnectError as e:
+            raise DshGatewayError(friendly_error_message(None)) from e
+        except httpx.HTTPError as e:
+            raise DshGatewayError(f"Gateway request failed: {e}") from e
+
+    def upload_file(self, blob: bytes, filename: str) -> dict:
+        """Upload file bytes into the gateway workspace. Returns file info dict."""
+        from urllib.parse import quote
+
+        url = f"{self._base}/v1/dsh/files/upload?filename={quote(filename, safe='')}"
+        try:
+            with httpx.Client(timeout=httpx.Timeout(self._timeout, connect=10.0)) as client:
+                response = client.post(
+                    url,
+                    headers={**build_headers(self._api_key, None), "Content-Type": "application/octet-stream"},
+                    content=blob,
+                )
+                if response.status_code != 200:
+                    raise DshGatewayError(
+                        f"Gateway error ({response.status_code}): {response.text[:200]}",
+                        status_code=response.status_code,
+                        detail=response.text,
+                    )
+                data = response.json()
+                return data if isinstance(data, dict) else {}
+        except httpx.TimeoutException as e:
+            raise DshGatewayError("Timed out while uploading a file to the workspace.") from e
         except httpx.ConnectError as e:
             raise DshGatewayError(friendly_error_message(None)) from e
         except httpx.HTTPError as e:

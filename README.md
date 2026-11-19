@@ -1,79 +1,97 @@
 # deepseek_harness_chat
 
-Dify 工具插件：通过 [dsh-openai-gateway](https://github.com/backrooms-yrc/dsh-openai-gateway)
-的 OpenAI 兼容 API，与本地 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness)
-Agent 对话。每次调用都在带工具与工作区的真实 Agent 会话中执行。
+A Dify tool plugin that chats with a local [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) agent through the [dsh-openai-gateway](https://github.com/sawyer-shi/dsh-openai-gateway) OpenAI-compatible API. Every call runs inside a **real agent session with tools and a workspace** — the agent can execute code, browse, and produce deliverable files that come back into the conversation as downloadable attachments.
 
-## 前置条件
+> 简体中文文档：[readme/README_zh_Hans.md](readme/README_zh_Hans.md)
 
-1. 安装并运行 DeepSeek Harness（DSH）
-2. 安装 dsh-openai-gateway 插件并重启 DSH：
+## Features
+
+- **Real agent, not a chat completion** — each turn is executed by a DSH agent with tools, shell access and a workspace
+- **Sticky sessions** — session-level (per Dify conversation), user-level (per Dify user across apps), or stateless
+- **File in** — attach files (documents, spreadsheets, images…); they are uploaded into the agent workspace and the agent is instructed to read them
+- **File out** — files generated during the turn (Excel / CSV / PDF / docx / images / zip…) are returned as conversation attachments
+- **Truncation control** — independent caps for Dify-side text (`max_text_chars`) and DSH-side tokens (`max_tokens`)
+
+## Prerequisites
+
+1. Install and run [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (dsh 0.2.x), logged in with your DeepSeek account.
+2. Install the gateway plugin into DSH and restart DSH:
 
    ```bash
-   dsh plugin --profile <profile> add github:backrooms-yrc/dsh-openai-gateway
+   dsh plugin --profile web add github:sawyer-shi/dsh-openai-gateway#v0.3.2
    ```
 
-3. 获取网关地址与密钥：
+   The gateway ships with `agentPreset: ptc` + `permissionPreset: workspace-write` by default, so the agent can run code and write files out of the box.
+
+3. Get the gateway address and API key:
 
    ```bash
    cat $DSH_HOME/openai-gateway/state.json      # {"host": "127.0.0.1", "port": 41540, ...}
    cat $DSH_HOME/openai-gateway/api-keys.json   # {"keys": ["sk-dsh-..."]}
    ```
 
-## 在 Dify 中安装
+## Install in Dify
 
-1. 从 Release 下载 `deepseek_harness_chat-<version>.difypkg`，或在 Dify「插件 → 安装插件 → 通过本地文件安装」上传
-2. 配置凭据：
-   - **API 密钥**：`sk-dsh-...`（见上）
-   - **网关地址**：默认 `http://127.0.0.1:41540`
+1. Download `deepseek_harness_chat-<version>.difypkg` from Releases, or in Dify go to **Plugins → Install plugin → Install via local package file** and upload it.
+2. Configure credentials:
+   - **API Key**: `sk-dsh-...` from `api-keys.json`
+   - **Gateway Base URL**: default `http://127.0.0.1:41540`
 
-## Docker 网络注意事项
+### Network topology (Base URL)
 
-Dify 以 Docker 部署时，容器内的 `127.0.0.1` 不是宿主机。请将网关地址改为：
+| Topology | Base URL | Extra requirements |
+|---|---|---|
+| Dify (Docker) and DSH on the same host | `http://host.docker.internal:41540` | none |
+| Dify and DSH on different hosts | `http://<DSH-host-LAN-IP>:41540` | set gateway `host: 0.0.0.0` in its patch config and open port 41540 in the firewall |
 
-```
-http://host.docker.internal:41540
-```
+Docker note: `127.0.0.1` inside a container is not the host machine. On Linux, add `extra_hosts: ["host.docker.internal:host-gateway"]` to the Dify containers in `docker-compose`, or use the host's LAN IP directly.
 
-（Linux 需在 `docker-compose` 中为 Dify 容器配置 `extra_hosts: ["host.docker.internal:host-gateway"]`，或改用宿主机内网 IP。）
+DSH must be running (desktop app started) — the gateway is a DSH plugin and lives in its process. Each DSH machine generates its own API key.
 
-## 使用
+## Usage
 
-在 Chatflow / Workflow / Agent 应用中添加「DeepSeek Harness Chat」工具节点：
+Add the **DeepSeek Harness Chat** tool node in a Chatflow / Workflow / Agent app.
 
-| 参数 | 说明 |
-|---|---|
-| 用户消息 | 本轮发给 Agent 的内容；粘性会话下只需新消息 |
-| 模型 | `default`（跟随 DSH 默认）、`provider/model`（如 `deepseek-official/deepseek-v4-flash`）或裸模型名 |
-| 会话级别 | 见下 |
-| 超时（秒） | 单轮超时，默认 300；Agent 单轮可能耗时数分钟 |
-| 附带思考内容 | 开启后在回复前附加 `<think>` 段 |
+| Parameter | Default | Description |
+|---|---|---|
+| Prompt | — | The user message for this turn. With sticky sessions, send only the new message. |
+| Attached Files | — | Files uploaded with the message; uploaded to the agent workspace first, then the agent is told to read them. |
+| Model | `default` | `default` (follow DSH default), `provider/model` (e.g. `deepseek-official/deepseek-v4-flash`), or a bare model name. |
+| Session Scope | `session` | `session` / `user` / `none` — see below. |
+| Timeout (seconds) | `300` | Per-turn timeout; agent turns can take minutes. |
+| Include Reasoning | `false` | Prepend the agent's thinking as a `<think>` block. |
+| Return Generated Files | `true` | Return files newly created in the workspace during this turn as attachments. |
+| Max Files Per Turn | `5` | Upper limit (1–10) on returned files. |
+| Max Reply Characters | `6000` | Cap on the text reply returned to Dify; `0` = unlimited. Long reports can exhaust the Dify app's output tokens and get truncated — files are unaffected. |
+| Max Output Tokens (DSH turn) | `32768` | Output token cap passed to the DSH agent. Too small (e.g. 8192) truncates long turns mid-answer; DSH clamps to model capacity; `0` = DSH default. |
+| File Extensions Filter | *(empty)* | Empty: only deliverable types (xlsx/xls/csv/pdf/docx/pptx/txt/md/images/html/json/zip), intermediate scripts like `.py` are excluded. `*`: every new file. Or a comma-separated whitelist, e.g. `xlsx,csv,pdf`. |
 
-### 会话级别
+### Session scopes
 
-- **会话级（默认）**：同一 Dify 会话复用同一个 DSH Agent，上下文与工作区跨节点连续
-- **用户级**：同一 Dify 用户跨会话、跨应用复用同一个 DSH Agent（个人专属工作区）
-- **无状态**：每次调用独立，回合结束即销毁
+- **Session** (default): one DSH agent per Dify conversation — context and workspace persist across nodes.
+- **User**: one DSH agent per Dify user across conversations and apps (a personal workspace).
+- **Stateless**: every call is independent; the session is destroyed after the turn.
 
-会话由插件自动管理（新建 / 复用 / 网关逐出后自动重建）。工具的 JSON 输出含
-`session_id`、`tool_calls`、`tool_call_names`、`model` 等字段，可在工作流中引用。
+Sessions are managed automatically by the plugin (create / reuse / recreate after gateway eviction).
 
-## 已知限制
+### Output
 
-- 会话映射保存在插件进程内存中，插件重启后自动新建会话（网关侧会话 LRU 上限默认 16）
-- Agent 内部工具调用只返回名称与次数，不返回执行结果
-- `include_reasoning` 仅在模型输出思考内容（`reasoning_content`）时有效
+The tool yields one text message (the reply), zero or more file attachments, and a JSON message with fields for downstream workflow references: `session_id`, `scope`, `reply_chars`, `reply_preview`, `reply_truncated`, `tool_calls`, `tool_call_names`, `model`.
 
-## 开发
+## Known limitations
+
+- Session mapping lives in plugin process memory; after a plugin restart sessions are recreated (gateway sticky-session LRU cap is 16 by default).
+- Agent-internal tool calls are returned as names/counts only, not results.
+- `Include Reasoning` only takes effect when the model emits `reasoning_content`.
+
+## Development
 
 ```bash
 uv sync
 uv run pytest -v
 ```
 
-打包：`dify plugin package . -o deepseek_harness_chat-0.0.1.difypkg`（需
-[dify-plugin-daemon](https://github.com/langgenius/dify-plugin-daemon) CLI），或直接发
-Release 由 GitHub Actions 自动打包。
+Package: `dify plugin package . -o deepseek_harness_chat-<version>.difypkg` (requires the [dify-plugin-daemon](https://github.com/langgenius/dify-plugin-daemon) CLI), or cut a GitHub Release and let GitHub Actions package it.
 
 ## License
 

@@ -57,7 +57,7 @@ class FakeClient:
         self.error = error
         self.calls: list[str] = []
 
-    def chat(self, prompt, model="default", session_header="new"):
+    def chat(self, prompt, model="default", session_header="new", max_tokens=None):
         self.calls.append(session_header)
         if self.error is not None:
             raise self.error
@@ -107,7 +107,7 @@ class TestChatWithSessionRetry:
         )
 
         class RetryClient(FakeClient):
-            def chat(self, prompt, model="default", session_header="new"):
+            def chat(self, prompt, model="default", session_header="new", max_tokens=None):
                 self.calls.append(session_header)
                 if len(self.calls) == 1:
                     raise self.error
