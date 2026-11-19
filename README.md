@@ -108,6 +108,14 @@ uv run pytest -v
 
 Package: `dify plugin package . -o deepseek_harness_chat-<version>.difypkg` (requires the [dify-plugin-daemon](https://github.com/langgenius/dify-plugin-daemon) CLI), or cut a GitHub Release and let GitHub Actions package it.
 
-## License
+## Developer Information
 
-MIT
+- **Author**: `https://github.com/sawyer-shi`
+- **Email**: sawyer36@foxmail.com
+- **License**: MIT
+- **Source Code**: `https://github.com/sawyer-shi/dify-plugins-deepseek_harness_chat`
+- **Support**: Through Dify platform and GitHub Issues
+
+## License Notice
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) file for full license text.

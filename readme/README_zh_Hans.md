@@ -116,6 +116,14 @@ uv run pytest -v
 [dify-plugin-daemon](https://github.com/langgenius/dify-plugin-daemon) CLI），或直接发
 Release 由 GitHub Actions 自动打包。
 
-## License
+## 开发者信息
 
-MIT
+- **作者**: `https://github.com/sawyer-shi`
+- **邮箱**: sawyer36@foxmail.com
+- **许可证**: MIT
+- **源代码**: `https://github.com/sawyer-shi/dify-plugins-deepseek_harness_chat`
+- **支持**: 通过 Dify 平台和 GitHub Issues 提供
+
+## 许可证声明
+
+本项目采用 MIT 许可证。完整的许可证文本请参阅 [LICENSE](LICENSE) 文件。
