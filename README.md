@@ -2,7 +2,7 @@
 
 A Dify tool plugin that chats with a local [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) agent through the [dsh-openai-gateway](https://github.com/sawyer-shi/dsh-openai-gateway) OpenAI-compatible API. Every call runs inside a **real agent session with tools and a workspace** — the agent can execute code, browse, and produce deliverable files that come back into the conversation as downloadable attachments.
 
-> 简体中文文档：[readme/README_zh_Hans.md](readme/README_zh_Hans.md)
+> Simplified Chinese documentation: [readme/README_zh_Hans.md](readme/README_zh_Hans.md)
 
 ## Version Information
 
