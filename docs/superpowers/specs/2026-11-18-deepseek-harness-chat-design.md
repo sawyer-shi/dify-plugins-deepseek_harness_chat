@@ -1,6 +1,6 @@
 # DeepSeek Harness Chat — Dify 插件设计文档
 
-- 日期：2026-11-18
+- 日期：2026-11-22
 - 插件名：`deepseek_harness_chat`
 - 形态：Tool 插件（工具供应商）
 - 目标 Dify 规范：最新插件规范（`dify_plugin>=0.9.0,<0.11.0`，manifest `resource`/`plugins` 段，pyproject/uv，Python 3.12）
@@ -84,7 +84,7 @@ description:
   zh_Hans: >
     通过 dsh-openai-gateway 的 OpenAI 兼容 API 与本地 DeepSeek Harness (DSH) Agent
     对话。支持会话级与用户级粘性会话。
-created_at: "2026-11-18T00:00:00.000000000Z"
+created_at: "2026-11-22T00:00:00.000000000Z"
 icon: icon.svg
 resource:
   memory: 268435456                  # 256 MiB

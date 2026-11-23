@@ -7,12 +7,12 @@ A Dify tool plugin that chats with a local [DeepSeek Harness (DSH)](https://gith
 ## Version Information
 
 - **Current Version**: v0.0.1
-- **Release Date**: 2026-11-19
+- **Release Date**: 2026-11-22
 - **Compatibility**: Dify Plugin Framework
 - **Python Version**: 3.12
 
 ### Version History
-- **v0.0.1** (2026-11-19): Initial release
+- **v0.0.1** (2026-11-22): Initial release
   - Chat with a local DeepSeek Harness agent via dsh-openai-gateway; every call runs in a real agent session with tools and a workspace
   - Sticky sessions: session-level, user-level, and stateless modes with automatic session management
   - **File input**: attach files with the message; they are uploaded to the agent workspace before the turn

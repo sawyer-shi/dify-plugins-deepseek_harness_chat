@@ -72,7 +72,7 @@ description:
     对话。支持会话级与用户级粘性会话。
 icon: icon.svg
 icon_dark: icon-dark.svg
-created_at: "2026-11-18T00:00:00Z"
+created_at: "2026-11-22T00:00:00Z"
 tags:
   - productivity
   - utilities
