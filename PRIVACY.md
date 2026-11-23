@@ -1,6 +1,6 @@
 # Privacy Policy / 隐私政策
 
-**Effective Date / 生效日期**: November 19, 2026 / 2026年11月19日
+**Effective Date / 生效日期**: November 22, 2026 / 2026年11月22日
 **Version / 版本**: v0.0.1
 **Plugin Name / 插件名称**: DeepSeek Harness Chat / DeepSeek Harness 交互
 **License / 许可证**: MIT
@@ -119,4 +119,4 @@ DeepSeek Harness Chat 插件（"插件"）将 Dify 平台连接到你**自托管
 
 ---
 
-**最后更新：** 2026年11月19日
+**最后更新：** 2026年11月22日
